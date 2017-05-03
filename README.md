@@ -1,2 +1,2 @@
 # SingleDofSystemSample
-The sample code of single degree of freedom system
+Pythonによる1自由度系の地震応答解析
