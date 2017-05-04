@@ -20,14 +20,37 @@ class SingleDofSystem:
 
 
   def header(self):
+    """
+    表形式出力用のラベルを取得する.
+
+    Returns
+    -------
+    result : str
+        表形式出力用のラベル.
+
+    """
     return "Time,Ground Acceleration,Absolute Acceleration,Relative Velocity,Relative Displacement"
 
 
   def result(self):
+    """
+    表形式で出力するための解析結果の配列を取得する.
+
+    Returns
+    -------
+    result : ndarray
+        解析結果の配列.
+        列は時刻,地震加速度,絶対加速度,相対速度,相対変位の順になっている.
+
+    """
     return np.c_[self.time, self.__acc_grd, self.acc_abs, self.vel, self.disp]
 
 
   def integrate(self):
+    """
+    選択した数値積分手法により1自由度系の地震応答解析を行う.
+
+    """
     if   self.__method == "newmark":
       raise NotImplementedError("Newmark beta method is not implemented.")
     elif self.__method == "nigam":
@@ -43,15 +66,26 @@ class SingleDofSystem:
 
 
   def __nigam_jennings_integration(self):
+    """
+    Nigam-Jennings法により1自由度系の地震応答解析を行う.
+
+    Notes
+    -----
+    * 時間刻みΔtは変化しないと仮定している.
+
+    References
+    ----------
+    .. [1] 大崎順彦: 新・地震動のスペクトル解析入門, 鹿島出版会, pp.129-133, 1994.
+
+    """
     omega  = math.sqrt(self.__k / self.__m)
     h      = self.__h
     dt     = self.__dt
 
-    h2     = h*h
-    omega2 = omega*omega
-    omega3 = omega*omega*omega
+    h2     = h * h
+    omega2 = omega * omega
+    omega3 = omega * omega * omega
     omegad = math.sqrt(1.0 - h2) * omega
-
     exp    = math.exp(-h*omega*dt)
     cos    = math.cos(omegad*dt)
     sin    = math.sin(omegad*dt)
@@ -72,13 +106,13 @@ class SingleDofSystem:
 
     # 初期値
     self.disp[0]    = 0.0
-    self.vel[0]     = - self.__acc_grd[0]*dt
+    self.vel[0]     = - self.__acc_grd[0] * dt
     self.acc_abs[0] = - 2.0 * h * omega * self.__acc_grd[0] * dt
 
     # 時間積分
     for i in range(0, self.__acc_grd.size - 1):
-      self.disp[i+1] = a11*self.disp[i]      + a12*self.vel[i] \
-                     + b11*self.__acc_grd[i] + b12*self.__acc_grd[i+1]
-      self.vel[i+1]  = a21*self.disp[i]      + a22*self.vel[i] \
-                     + b21*self.__acc_grd[i] + b22*self.__acc_grd[i+1]
+      self.disp[i+1]    = a11*self.disp[i]      + a12*self.vel[i] \
+                        + b11*self.__acc_grd[i] + b12*self.__acc_grd[i+1]
+      self.vel[i+1]     = a21*self.disp[i]      + a22*self.vel[i] \
+                        + b21*self.__acc_grd[i] + b22*self.__acc_grd[i+1]
       self.acc_abs[i+1] = - 2.0*h*omega*self.vel[i+1] - omega2*self.disp[i+1]
