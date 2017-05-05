@@ -10,7 +10,8 @@ if __name__ == "__main__":
   Pythonによる1自由度系の地震応答解析のサンプルコード.
 
   """
-  test_dir = "test/nigam/"
+  #test_dir = "test/nigam/"
+  test_dir = "test/newmark/"
 
   acc_grd  = np.genfromtxt(test_dir+"acc_grd.txt", dtype=np.float64)
   settings = json.load(open(test_dir+"settings.json", "r"))

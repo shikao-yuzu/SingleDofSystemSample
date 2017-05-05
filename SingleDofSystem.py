@@ -52,7 +52,7 @@ class SingleDofSystem:
 
     """
     if   self.__method == "newmark":
-      raise NotImplementedError("Newmark beta method is not implemented.")
+      self.__newmark_beta_integration()
     elif self.__method == "nigam":
       self.__nigam_jennings_integration()
     elif self.__method == "houbolt":
@@ -63,6 +63,47 @@ class SingleDofSystem:
       raise NotImplementedError("Runge-Kutta method is not implemented.")
     else:
       raise NotImplementedError("Unsupport integration method.")
+
+
+  def __newmark_beta_integration(self):
+    """
+    Newmark-β法により1自由度系の地震応答解析を行う.
+
+    Notes
+    -----
+    * 非増分系で実装している.
+
+    References
+    ----------
+    .. [1] 柴田明徳: 最新耐震構造解析(第3版), 森北出版, pp.97-108, 2014. 
+       [2] 久田俊明, 野口裕久: 非線形有限要素法の基礎と応用, 丸善, pp.261-265, 1996.
+
+    """
+    k_m     = self.__k / self.__m
+    omega   = math.sqrt(k_m)
+    h       = self.__h
+    c_m     = 2.0 * h * omega
+    dt      = self.__dt
+    beta    = self.__param["beta"]
+    gamma   = self.__param["gamma"]
+
+    # 相対速度
+    acc_rel = np.zeros_like(self.__acc_grd, dtype=np.float64)
+
+    # 初期値
+    self.disp[0]    = 0.0
+    self.vel[0]     = - self.__acc_grd[0] * dt
+    self.acc_abs[0] = - 2.0 * h * omega * self.__acc_grd[0] * dt
+    acc_rel[0]      = self.acc_abs[0] - self.__acc_grd[0]
+
+    # 時間積分
+    for i in range(0, self.__acc_grd.size - 1):
+      acc_rel[i+1]      = - ( self.__acc_grd[i+1] + c_m*( self.vel[i] + dt*(1.0-gamma)*acc_rel[i] )                       \
+                                                  + k_m*( self.disp[i] + dt*self.vel[i] + dt*dt*(0.5-beta)*acc_rel[i] ) ) \
+                          / ( 1.0 + c_m*dt*gamma + k_m*dt*dt*beta )
+      self.acc_abs[i+1] = acc_rel[i+1] + self.__acc_grd[i+1]
+      self.disp[i+1]    = self.disp[i] + dt*self.vel[i] + dt*dt*( (0.5-beta)*acc_rel[i] + beta*acc_rel[i+1] )
+      self.vel[i+1]     = self.vel[i] + dt*( (1.0-gamma)*acc_rel[i] + gamma*acc_rel[i+1] )
 
 
   def __nigam_jennings_integration(self):
